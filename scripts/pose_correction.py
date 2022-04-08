@@ -1,6 +1,6 @@
 import rospy
 # ROS Image message
-from stag_ros.msg import STagMarkerArray, StagMarker
+from stag_ros.msg import STagMarkerArray
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 import cv2
@@ -58,7 +58,7 @@ class PoseCorrection:
         self.pubX = rospy.Publisher("/corrected_pose/X", Float64, queue_size=self.window_size)
         self.pubY = rospy.Publisher("/corrected_pose/Y", Float64, queue_size=self.window_size)
         self.pubZ = rospy.Publisher("/corrected_pose/Z", Float64, queue_size=self.window_size)
-        self.correct_pose = rospy.Publisher("/smooth_pose", Point, queue_size=self.window_size)
+        self.correct_pose = rospy.Publisher("/marker", Point, queue_size=self.window_size)
 
         self.x_arr = []
         self.y_arr = []
