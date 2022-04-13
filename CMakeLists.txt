@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   tf
+  comm_pipeline
 )
 
 ## System dependencies are found with CMake's conventions

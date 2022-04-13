@@ -1,8 +1,11 @@
+from requests import request
 import rospy
 # ROS Image message
 from stag_ros.msg import STagMarkerArray
 from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
+from comm_pipeline.srv import GetTarget
+from comm_pipeline.srv import FoundMarker
 import cv2
 import numpy as np
 import statistics
@@ -58,7 +61,14 @@ class PoseCorrection:
         self.pubX = rospy.Publisher("/corrected_pose/X", Float64, queue_size=self.window_size)
         self.pubY = rospy.Publisher("/corrected_pose/Y", Float64, queue_size=self.window_size)
         self.pubZ = rospy.Publisher("/corrected_pose/Z", Float64, queue_size=self.window_size)
-        self.correct_pose = rospy.Publisher("/marker", Point, queue_size=self.window_size)
+        self.get_target_server = rospy.Service('/get_target', GetTarget, self.get_target_callback)
+
+        self.correct_pose = None
+        self.is_filter_initialized = False
+
+        rospy.wait_for_service('/planner/found_marker')
+        self.found_marker_client = rospy.ServiceProxy("/planner/found_marker", FoundMarker)
+
 
         self.x_arr = []
         self.y_arr = []
@@ -105,7 +115,22 @@ class PoseCorrection:
             point3d.y = -self.y_median
             point3d.z = self.z_median
 
-            self.correct_pose.publish(point3d)
+            self.correct_pose = point3d
+
+            if (not self.is_filter_initialized):
+                try:
+                    req = FoundMarker()
+                    req.position = self.correct_pose
+                    res = self.found_marker_client(req)
+
+                    if res.success:
+                        print("Found marker service called succesfully")
+                    else:
+                        print("ERROR: Something went wrong...")
+
+
+                except rospy.ServiceException as exc:
+                    print("Service did not process request: " + str(exc))
             
             # avg over window and reset
             # self.x_arr = []
@@ -117,10 +142,26 @@ class PoseCorrection:
             self.y_arr.pop(0)
             self.z_arr.pop(0)
 
+            self.is_filter_initialized = True
+
+    def get_target_callback(self, req):
+
+        res = GetTarget()
+
+        # Havent gotten good tracking on marker
+        if self.correct_pose is None:
+            print("No marker pose")
+            res.isTracked = False
+            return res
+
+        res.position = self.correct_pose
+        res.isTracked = True
+
+        return res
 
 
 def main():
-    rospy.init_node('pose_correction_node', anonymous= False)
+    rospy.init_node('pose_correction', anonymous= False)
     PoseCorrection()
     rospy.spin()
 
