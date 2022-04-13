@@ -39,6 +39,9 @@ class PoseCorrection:
 
         self.found_marker_client = rospy.ServiceProxy("/planner/found_marker", FoundMarker)
 
+        self.last_seen = rospy.Time.now()
+        self.tracking_timeout = 1
+
     def callback(self, sTagMarkerArray):
         if not self.is_activated:
             return
@@ -53,6 +56,8 @@ class PoseCorrection:
         self.x_arr.append(pos_x)
         self.y_arr.append(pos_y)
         self.z_arr.append(pos_z)
+
+        self.last_seen = rospy.Time.now()
 
         if (
             self.window_size == len(self.x_arr)
@@ -136,7 +141,11 @@ class PoseCorrection:
             return res
 
         res.position = self.point3d
-        res.isTracked = True
+
+        if (rospy.Time.now() - self.last_seen) > rospy.Duration.from_sec(self.tracking_timeout):
+            res.isTracked = False
+        else:
+            res.isTracked = True
 
         return res
 
