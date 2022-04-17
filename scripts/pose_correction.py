@@ -34,7 +34,7 @@ class PoseCorrection:
 
         self.get_target_server = rospy.Service('~get_target', GetTarget, self.get_target_callback)
         self.activate_stag_server = rospy.Service('~activate_stag', ActivateStag, self.activate_stag_callback)
-        self.is_filter_initialized = False
+        self.filter_initialized = False
         self.is_activated = False
 
         self.found_marker_client = rospy.ServiceProxy("/planner/found_marker", FoundMarker)
@@ -111,7 +111,7 @@ class PoseCorrection:
             
             self.smooth_pose.publish(self.point3d)
 
-            if (not self.is_filter_initialized):
+            if (not self.filter_initialized):
                 try:
                     req = FoundMarkerRequest()
                     req.position.point = self.point3d
@@ -129,13 +129,13 @@ class PoseCorrection:
                 except rospy.ServiceException as ex:
                     print("Service did not process request: " + str(ex))
                     
-            self.is_filter_initialized = True
+            self.filter_initialized = True
             
     def get_target_callback(self, req):
         res = GetTargetResponse()
 
         # Havent gotten good tracking on marker
-        if not self.is_filter_initialized:
+        if not self.filter_initialized:
             print("No marker pose")
             res.isTracked = False
             return res
@@ -144,6 +144,7 @@ class PoseCorrection:
 
         if (rospy.Time.now() - self.last_seen) > rospy.Duration.from_sec(self.tracking_timeout):
             res.isTracked = False
+            self.filter_initialized = False
         else:
             res.isTracked = True
 
