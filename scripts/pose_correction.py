@@ -145,6 +145,9 @@ class PoseCorrection:
         if (rospy.Time.now() - self.last_seen) > rospy.Duration.from_sec(self.tracking_timeout):
             res.isTracked = False
             self.filter_initialized = False
+            self.x_arr = []
+            self.y_arr = []
+            self.z_arr = []
         else:
             res.isTracked = True
 
