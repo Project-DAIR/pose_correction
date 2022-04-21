@@ -1,13 +1,14 @@
-from requests import request
-import rospy
-
-# ROS Image message
-from stag_ros.msg import STagMarkerArray
-from std_msgs.msg import Float64
-from geometry_msgs.msg import Point
-from comm_pipeline.srv import GetTarget, GetTargetResponse, FoundMarker, FoundMarkerRequest, ActivateStag, ActivateStagResponse
 import statistics
 import sys
+
+import rospy
+import tf
+from comm_pipeline.srv import (ActivateStag, ActivateStagResponse, FoundMarker,
+                               FoundMarkerRequest, GetTarget,
+                               GetTargetResponse)
+from geometry_msgs.msg import Point
+from stag_ros.msg import STagMarkerArray
+
 
 class PoseCorrection:
     def __init__(self, filter_type):
@@ -32,15 +33,20 @@ class PoseCorrection:
 
         self.filter_type = filter_type
 
-        self.get_target_server = rospy.Service('~get_target', GetTarget, self.get_target_callback)
-        self.activate_stag_server = rospy.Service('~activate_stag', ActivateStag, self.activate_stag_callback)
+        self.get_target_server = rospy.Service(
+            '~get_target', GetTarget, self.get_target_callback)
+        self.activate_stag_server = rospy.Service(
+            '~activate_stag', ActivateStag, self.activate_stag_callback)
         self.filter_initialized = False
         self.is_activated = False
 
-        self.found_marker_client = rospy.ServiceProxy("/planner/found_marker", FoundMarker)
+        self.found_marker_client = rospy.ServiceProxy(
+            "/planner/found_marker", FoundMarker)
 
         self.last_seen = rospy.Time.now()
         self.tracking_timeout = 1
+
+        self.br = tf.TransformBroadcaster()
 
     def callback(self, sTagMarkerArray):
         if not self.is_activated:
@@ -108,7 +114,13 @@ class PoseCorrection:
             print("Filter type : ", filter_type)
             print(self.point3d)
             print()
-            
+
+            # Send transform (helps with visualization)
+            self.br.sendTransform((self.point3d.x, -self.point3d.y, self.point3d.z), (stag.pose.orientation.x, stag.pose.orientation.y, stag.pose.orientation.z, stag.pose.orientation.w),
+                                  rospy.Time.now(),
+                                  "filter",
+                                  "oak_left_camera_optical_frame")
+
             self.smooth_pose.publish(self.point3d)
 
             if (not self.filter_initialized):
@@ -128,9 +140,9 @@ class PoseCorrection:
 
                 except rospy.ServiceException as ex:
                     print("Service did not process request: " + str(ex))
-                    
+
             self.filter_initialized = True
-            
+
     def get_target_callback(self, req):
         res = GetTargetResponse()
 
@@ -159,6 +171,7 @@ class PoseCorrection:
         res = ActivateStagResponse(True)
 
         return res
+
 
 def main(filter_type):
     rospy.init_node("marker", anonymous=False)
