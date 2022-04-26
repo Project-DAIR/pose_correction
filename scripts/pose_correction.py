@@ -44,7 +44,7 @@ class PoseCorrection:
             "/planner/found_marker", FoundMarker)
 
         self.last_seen = rospy.Time.now()
-        self.tracking_timeout = 1
+        self.tracking_timeout = 2.5
 
         self.br = tf.TransformBroadcaster()
 
