@@ -31,10 +31,10 @@ class LidarCorrection:
         self.last_seen = rospy.Time.now()
 
         if self.window_size == len(self.d_arr):
-            # self.d_moving_avg = round(statistics.median(self.d_arr))
+            self.d_moving_avg = round(statistics.median(self.d_arr))
             # self.d_arr = []
 
-            self.d_moving_avg = round(sum(self.d_arr) / self.window_size)
+            #self.d_moving_avg = round(sum(self.d_arr) / self.window_size)
             self.d_arr.pop(0)
 
             # print(self.d_moving_avg)
