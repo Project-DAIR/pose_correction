@@ -1,0 +1,9 @@
+<launch>
+  <!-- Run Pose correction -->
+  <node name="pose_correction" pkg="pose_correction" type="pose_correction.py" output="screen" respawn="true">
+  </node>
+
+  <!-- Run Lidar correction -->
+  <node name="lidar_correction" pkg="pose_correction" type="lidar_correction.py" output="screen" respawn="true">
+  </node>
+</launch>
